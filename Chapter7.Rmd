@@ -1,0 +1,310 @@
+---
+output: html_document
+---
+# Introduction to Statistical Learning - Chapter 7
+
+## Question 1
+a. When $x \leq \xi$, $(x-\xi)^3 = 0$, and $f(x) = \beta_0 + \beta_1 x + \beta_2 x^2 + \beta_3 x^3$. So $a_1 = \beta_0$, $b_1 = \beta_1$, $c_1 = \beta_2$, and $d_1 = \beta_3$.  
+b. When $x \gt \xi$,
+\[
+f(x) = \beta_0 + \beta_1 x + \beta_2 x^2 + \beta_3 x^3 + \beta_4 (x-\xi)^3 \\
+= \beta_0 + \beta_1 x + \beta_2 x^2 + \beta_3 x^3 + \beta_4 (x^3-3 x^2 \xi + 3 x \xi^2 - \xi^3) \\
+= \beta_0 - \beta_4 \xi^3 + x(\beta_1 + 3 \beta_4 \xi^2) + x^2 (\beta_2 - 3 \beta_4 \xi) + x^3(\beta_3+\beta_4) \\
+\]
+So, $a_2 = \beta_0 - \beta_4 \xi^3$, $b_2 = (\beta_1 + 3 \beta_4 \xi^2)$, $c_2 = (\beta_2 - 3 \beta_4 \xi)$, and $d_2 = \beta_3 + \beta_4$. Or we can write these in terms of the coefficients for $f_1(x)$ as $a_2 = a_1 - \beta_4 \xi^3$, $b_2 = (b_1 + 3 \beta_4 \xi^2)$, $c_2 = (c_1 - 3 \beta_4 \xi)$, and $d_2 = d_1 + \beta_4$.
+c. 
+\[
+f_1(\xi) = a_1 + b_1 \xi + c_1 \xi^2 + d_1 \xi^3 \\
+\]
+and
+\[
+f_2(\xi) = a_1 - \beta_4 \xi^3 + \xi (b_1 + 3 \beta_4 \xi^2) + \xi^2 (c_1 - 3 \beta_4 \xi) + \xi^3(d_1+\beta_4) \\
+= a_1 - \beta_4 \xi^3 +  b_1 \xi + 3 \beta_4 \xi^3 + c_1 \xi^2 - 3 \beta_4 \xi^3 + d_1 \xi^3 + \beta_4 \xi^3 \\
+= a_1 + b_1 \xi + c_1 \xi^2 + d_1 \xi^3  = f_1(\xi)\\
+\]  
+d. 
+\[
+f_1'(x) = b_1 + 2 c_1 x + 3 d_1 x^2 \\
+f_1'(\xi) = b_1 + 2 c_1 \xi + 3 d_1 \xi^2
+\]
+and
+\[
+f_2'(x) = b_2 + 2 c_2 x + 3 d_2 x^2 \\
+= (b_1 + 3 \beta_4 \xi^2) + 2 (c_1 - 3 \beta_4 \xi) x + 3 (d_1 + \beta_4) x^2 \\
+f_2'(\xi) = (b_1 + 3 \beta_4 \xi^2) + 2 (c_1 - 3 \beta_4 \xi) \xi + 3 (d_1 + \beta_4) \xi^2 \\
+= (b_1 + 3 \beta_4 \xi^2) + 2 c_1 \xi - 6 \beta_4 \xi^2 + 3 d_1 \xi^2 + 3 \beta_4 \xi^2 \\
+= b_1 + 2 c_1 \xi + 3 d_1 \xi^2 \\
+\]  
+e.
+\[
+f_1''(x) = 2 c_1 + 6 d_1 x \\
+f_1''(\xi) = 2 c_1 + 6 d_1 \xi \\
+\]
+and
+\[
+f_2'(x) = 2 c_2 + 6 d_2 x \\
+= 2 (c_1 - 3 \beta_4 \xi) + 6 (d_1 + \beta_4) x \\
+f_2'(\xi) = 2 (c_1 - 3 \beta_4 \xi) + 6 (d_1 + \beta_4) \xi \\
+= 2 c_1 - 6 \beta_4 \xi + 6 d_1 + 6 \beta_4 \xi \\
+= 2 c_1 + 6 d_1 \xi \\
+\]  
+
+## Question 2
+a. When $\lambda = \infty$, the first term is ignored, only the smoothness of the function (second term) matters. When $m=0$, $\int \left[ g^{m}(x) \right]^2 dx = \int g(x)^2 dx$, which will be minimized when $g(x)=0$.  
+b. When $m=1$, second term is $\int \left[ g'(x) \right]^2 dx$, which means that we want to minimize the first derivative. The first derivative is 0 when the function is constant. So the optimal solution will be the function of the form $g(x) = c$ that minimizes the first term. In other words, $c$ will be the mean output.  
+c. When $m=2$, we want to minimize the second derivative. The second derivative of functions of the form $g(x) = \beta_0 + \beta_1 x$ is 0. Hence, the optimal solution will be the best line fit to the data.  
+d. With a similar argument, the optimal solution will be the best second degree polynomial fit to the data.  
+e. Since $\lambda=0$, second term does not matter. The solution will be the function $g(x)$ that goes through all the data points.  
+
+## Question 5
+a. $\hat{g}_2$ is a more flexible model, because the fourth derivative is minimized leading to a third degree polynomial. For $\hat{g}_1$, the third derivative is minimized, which leads to a second degree polynomial. Thus, the training RSS will be lower for the more flexible model, $\hat{g}_2$.  
+b. The test RSS depends on the data we have; we cannot say anything about it.  
+c. For $\lambda=0$, the two problems are the same; hence will give us the same solution.  
+
+## Question 9
+
+a. Let us load the data and fit polynomial regression.
+```{r}
+library(MASS)
+lm.fit = lm(nox~poly(dis, 3), data=Boston)
+summary(lm.fit)
+plot(Boston$dis, Boston$nox, col='darkgrey')
+dis.range = range(Boston$dis)
+dis.grid = seq(from=dis.range[1], to=dis.range[2], length.out = 100)
+pred.grid = predict(lm.fit, newdata=data.frame(dis=dis.grid), se=T)
+lines(dis.grid, pred.grid$fit, col='blue', lwd=2)
+lines(dis.grid, pred.grid$fit + 2*pred.grid$se.fit, col='blue', lwd=2, lty='dashed')
+lines(dis.grid, pred.grid$fit - 2*pred.grid$se.fit, col='blue', lwd=2, lty='dashed')
+```
+
+b. Fit polynomials of degree 1 to 10.
+```{r}
+fit_predict_poly = function(degree){
+  lm.fit = lm(nox~poly(dis, degree = degree), data=Boston)  
+  pred = predict(lm.fit, newdata=data.frame(dis=dis.grid), se=T)
+  rss = summary(lm.fit)[[6]]
+  list(pred=pred, rss=rss)
+}
+
+lm.fits = sapply(X = 1:10, FUN = fit_predict_poly) 
+plot(Boston$dis, Boston$nox, col='darkgrey')
+title('Polynomial fits')
+for( i in 1:10 ){
+  col = rainbow(n = 10)[i]
+  lines(dis.grid, lm.fits[[1,i]]$fit, lwd=2, col=col)  
+  #lines(dis.grid, lm.fits[[1,i]]$fit + 2*lm.fits[[1,i]]$se.fit, lwd=2, lty='dashed', col=col)
+  #lines(dis.grid, lm.fits[[1,i]]$fit - 2*lm.fits[[1,i]]$se.fit, lwd=2, lty='dashed', col=col)
+}
+plot(1:10, unlist(lm.fits[2, ]), type = 'l')
+title('RSS for degrees 1-10')
+```
+
+c. Run 10-fold cross validation for polynomials of degree 1 to 10.
+
+```{r}
+cv.lm = function(degree, k, seed){
+  set.seed(seed)
+  folds = sample(1:k, nrow(Boston), rep=T)
+  rss = rep(0, k)
+  for( i in 1:k ){
+    fit = lm(nox~poly(dis, degree), data = Boston[folds!=i,])
+    pred = predict(fit, newdata=Boston[folds==i,])
+    rss[i] = mean((Boston[folds==i, 'nox'] - pred)^2)
+  }
+  data.frame(rss=mean(rss), sd_rss = sd(rss))
+}
+
+seed = 1
+k = 10
+rss = sapply(1:10, function(d){ cv.lm(d, k, seed)})
+# ylim = c(min(unlist(rss[1,])-unlist(rss[2,])), max(unlist(rss[1,])+unlist(rss[2,])))
+plot(1:10, rss[1,], type='l')
+# segments(1:10, unlist(rss[1,])-unlist(rss[2,]), 1:10, unlist(rss[1,])+unlist(rss[2,]))
+which.min(rss[1,])
+```
+
+a. Use regression splines with 4 degrees of freedom.
+```{r}
+library(splines)
+bs.fit = lm(nox~bs(dis, df=4), data=Boston)
+summary(bs.fit)
+plot(Boston$dis, Boston$nox, col='darkgrey')
+dis.range = range(Boston$dis)
+dis.grid = seq(from=dis.range[1], to=dis.range[2], length.out = 100)
+pred.grid = predict(bs.fit, newdata=data.frame(dis=dis.grid), se=T)
+lines(dis.grid, pred.grid$fit, col='blue', lwd=2)
+lines(dis.grid, pred.grid$fit + 2*pred.grid$se.fit, col='blue', lwd=2, lty='dashed')
+lines(dis.grid, pred.grid$fit - 2*pred.grid$se.fit, col='blue', lwd=2, lty='dashed')
+```
+
+b. Fit regression splines of different degrees of freedom.
+```{r}
+fit_predict_bs = function(degree){
+  bs.fit = lm(nox~bs(dis, df=degree), data=Boston)  
+  pred = predict(bs.fit, newdata=data.frame(dis=dis.grid), se=T)
+  rss = summary(bs.fit)[[6]]
+  list(pred=pred, rss=rss)
+}
+
+bs.fits = sapply(X = 3:12, FUN = fit_predict_bs) 
+plot(Boston$dis, Boston$nox, col='darkgrey')
+title('Spline fits')
+for( i in 3:12 ){
+  col = rainbow(n = 10)[i-2]
+  lines(dis.grid, bs.fits[[1,i-2]]$fit, lwd=2, col=col)  
+  #lines(dis.grid, lm.fits[[1,i]]$fit + 2*lm.fits[[1,i]]$se.fit, lwd=2, lty='dashed', col=col)
+  #lines(dis.grid, lm.fits[[1,i]]$fit - 2*lm.fits[[1,i]]$se.fit, lwd=2, lty='dashed', col=col)
+}
+plot(3:12, unlist(bs.fits[2, ]), type = 'l')
+title('RSS for degrees of freedom 2-12')
+```
+
+c. Run 10-fold cross validation for polynomials of degree 1 to 10.
+
+```{r}
+cv.bs = function(degree, k, seed){
+  set.seed(seed)
+  folds = sample(1:k, nrow(Boston), rep=T)
+  rss = rep(0, k)
+  for( i in 1:k ){
+    fit = lm(nox~bs(dis, df=degree), data = Boston[folds!=i,])
+    pred = predict(fit, newdata=Boston[folds==i,])
+    rss[i] = mean((Boston[folds==i, 'nox'] - pred)^2)
+  }
+  data.frame(rss=mean(rss), sd_rss = sd(rss))
+}
+
+seed = 1
+k = 10
+rss = sapply(3:12, function(d){ cv.bs(d, k, seed)})
+# ylim = c(min(unlist(rss[1,])-unlist(rss[2,])), max(unlist(rss[1,])+unlist(rss[2,])))
+plot(3:12, rss[1,], type='l')
+# segments(1:10, unlist(rss[1,])-unlist(rss[2,]), 1:10, unlist(rss[1,])+unlist(rss[2,]))
+which.min(rss[1,])
+```
+
+## Question 10
+a. Split the data and perform forward selection.
+```{r}
+library(ISLR)
+set.seed(1)
+train = sample(1:nrow(College), nrow(College)/2)
+test = -train
+library(leaps)
+reg.fwd = regsubsets(Outstate~., College[train,], nvmax=17, method = 'forward')
+reg.fwd_summary = summary(reg.fwd)
+reg.fwd_summary
+
+plot(reg.fwd_summary$bic, type='l')
+which.min(reg.fwd_summary$bic)
+
+```
+
+b. Let us choos 3 predictors: `Expend`, `Private`, and `Room.Board`. Fit GAM.
+```{r}
+library(gam)
+gam.fit = gam(Outstate~s(Expend,5)+Private+s(Room.Board,5)+s(Terminal,5)+s(perc.alumni,5)+s(Grad.Rate,5), data = College[train,])
+summary(gam.fit)
+par(mfrow=c(2,3))
+plot(gam.fit, se=T, col='blue')
+```
+
+c. Evaluate on the test set.
+```{r}
+pred = predict(gam.fit, newdata=College[test,])
+par(mfrow=c(1,1))
+plot(pred, College[test, 'Outstate'])
+rss = mean((pred - College[test, 'Outstate'])^2)
+rss
+```
+
+d. The summary from `gam` fit shows that there is evidence for non-linear relationship for both `Expend`, `Room.Board`, and `Grad.Rate` variables.
+```{r}
+gam.fit = gam(Outstate~s(Expend,5)+Private+s(Room.Board,5)+Terminal+perc.alumni+s(Grad.Rate,5), data = College[train,]) 
+summary(gam.fit)
+par(mfrow=c(2,3))
+plot(gam.fit, se=T, col='blue')
+pred = predict(gam.fit, newdata=College[test,])
+par(mfrow=c(1,1))
+plot(pred, College[test, 'Outstate'])
+rss = mean((pred - College[test, 'Outstate'])^2)
+rss
+
+```
+
+
+## Question 11
+a. Generate response
+```{r}
+set.seed(1)
+x1 = rnorm(100)
+x2 = rnorm(100)
+y = .5 + 1*x1 + 1.5*x2 + rnorm(100)
+#y = .5 + 1*ns(x1, df=4) + 1.5*ns(x2, df=4) + rnorm(100)
+```
+
+b. Assume $\beta_1 = 0$.
+```{r}
+b1 = 0
+a = y - b1*x1
+fit = lm(a~x2)
+b2 = fit$coef[2]
+b0 = fit$coef[1]
+```
+
+c. Do the same thing for $\beta_1$. Seems like only one iteration is enough.
+```{r}
+a = y - b2*x2
+fit = lm(a~x1)
+b1 = fit$coef[2]
+b0 = fit$coef[1]
+```
+
+d. Do these in a loop.
+```{r}
+b0s = rep(NA, 100)
+b1s = rep(NA, 100)
+b2s = rep(NA, 100)
+b1 = rnorm(1)
+for( i in 1:100 ){
+  a = y - b1*x1
+  fit = lm(a~x2)
+  b2 = fit$coef[2]
+  b0 = fit$coef[1]
+  a = y - b2*x2
+  fit = lm(a~x1)
+  b1 = fit$coef[2]
+  b0 = fit$coef[1]
+  b0s[i] = b0
+  b1s[i] = b1
+  b2s[i] = b2
+}
+plot(1:100, b0s, col='blue', type='l', ylim=c(0,2))
+lines(1:100, b1s, col='red')
+lines(1:100, b2s, col='green')
+```
+
+e. Apply linear regression.
+```{r}
+lm.fit = lm(y~x1+x2, data=data.frame(x1=x1, x2=x2, y=y))
+summary(lm.fit)
+lm.fit$coef
+plot(1:100, b0s, col='blue', type='l', ylim=c(0,2))
+lines(1:100, b1s, col='red')
+lines(1:100, b2s, col='green')
+abline(h = lm.fit$coef[1], col='darkblue', lty='dashed')
+abline(h = lm.fit$coef[2], col='darkred', lty='dashed')
+abline(h = lm.fit$coef[3], col='darkgreen', lty='dashed')
+```
+
+g. We needed only one iteration to converge!!!
+
+
+
+
+
+
+
+
+
+

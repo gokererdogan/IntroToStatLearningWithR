@@ -1,0 +1,359 @@
+# Introduction to Statistical Learning - Chapter 3
+
+## Question 8 ##
+Load `Auto` dataset.
+
+```{r}
+setwd("~/Dropbox/Code/R/IntroductionToStatisticalLearning")
+auto = read.csv(file = 'Auto.csv', header = T, na.strings = '?')
+# look at rows containing NA
+auto[apply(is.na(auto), MARGIN = 1, FUN = any),]
+# remove rows containing NA
+auto = na.omit(auto)
+head(auto)
+```
+
+Fit a linear model with `horsepower` as predictor and `mpg` as response.
+
+```{r}
+fit = lm(mpg~horsepower, data=auto)
+summary(fit)
+```
+
+Plot the data and fit.
+
+```{r}
+plot(auto$horsepower, auto$mpg)
+abline(fit, lwd=3)
+```
+
+Look at diagnostic plots.
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit)
+```
+
+There seems to be hints of non-linearity in the data.
+
+## Question 9 ##
+
+Remove the `name` column from data frame, and look at the scatter plot for all of the variables.
+
+```{r}
+auto$name = NULL
+pairs(auto)
+```
+
+Look at the correlations between variables.
+
+```{r}
+cor(auto)
+```
+
+Fit multiple linear regression with all variables and look at diagnostic plots.
+
+```{r}
+fit = lm(mpg~., data=auto)
+summary(fit)
+par(mfrow = c(2,2))
+plot(fit)
+```
+
+## Question 11 ##
+
+Generate data.
+
+```{r}
+set.seed(1)
+x = rnorm(100)
+y = 2*x + rnorm(100)
+```
+
+Regress `y` onto `x` and `x` onto `y` (without intercept term).
+
+```{r}
+f = lm(y~x+0)
+f2 = lm(x~y+0)
+```
+
+Look at the fits. Note that t-values and $R^2$ are the same.
+
+```{r}
+summary(f)
+summary(f2)
+```
+
+## Question 12 ##
+
+Coefficient estimates for regression of $Y$ onto $X$ and $X$ onto $Y$ are the same when $\sum (x-\bar(x))^2 = \sum (y - \bar(x))^2$. We can easily generate a set of observations where the coefficients estimates for the two directions are different.
+
+```{r}
+set.seed(1)
+x = rnorm(100)
+y = 2*x
+f = lm(y~x+0)
+f2 = lm(x~y+0)
+f
+f2
+```
+
+It is easy to generate a set of observations where the coefficient estimates for both directions are the same; we just need to ensure that sum of squares are the same for the input and output. An easy way to do this is to just permute the input data to create the output.
+
+```{r}
+y2 = sample(x = x, size = 100, replace = F)
+f = lm(y2~x+0)
+f2 = lm(x~y2+0)
+f
+f2
+```
+
+## Question 13 ##
+
+```{r}
+set.seed(1)
+x = rnorm(n = 100, sd = 1)
+eps = rnorm(n = 100, sd = 0.25)
+y = -1 + 0.5*x + eps
+plot(x, y)
+```
+
+```{r}
+fit = lm(y~x)
+summary(fit)
+```
+
+```{r}
+plot(x, y)
+abline(fit, lwd=2)
+abline(coef = c(-1, 0.5), col='red', lwd=2)
+```
+
+## Question 14 ##
+
+```{r}
+set.seed(1)
+x1 = runif(100)
+x2 = 0.5*x1 + rnorm(100)/10
+y = 2 + 2*x1 + 0.3*x2 + rnorm(100)
+plot(x1, x2)
+```
+The form of the linear model is $Y = \beta_0 + \beta_1*X1 + \beta_2*X2 + \epsilon$ where $\beta_0 = 2$, $\beta_1 = 2$, and $\beta_1 = 0.3$.
+
+The correlation between $X1$ and $X2$ is
+
+```{r}
+cor(x1, x2)
+```
+
+Let us fit a linear model.
+
+```{r}
+fit = lm(y ~ x1 + x2)
+summary(fit)
+```
+
+The coefficient for $X1$ is statistically significant, but $\beta_2$ is not. Note that the coefficient estimates are not close to their actual values.
+
+Fit a model to predict $Y$ using only $X1$. Note that the coefficient is statistically significant.
+
+
+Now fit a model using only $X2$. Note that the coefficient for this model is also statistically significant.
+
+```{r}
+f2 = lm(y ~ x2)
+summary(f2)
+```
+
+The results from the multiple linear regression model seem to contradict the results from the simple models. However, because $X1$ and $X2$ are highly correlated, these results are expected.
+
+Now add a new point and re-fit the models.
+
+```{r}```{r}
+f1 = lm(y ~ x1)
+summary(f1)
+```
+
+x1 = c(x1, 0.1)
+x2 = c(x2, 0.8)
+y = c(y, 0.6)
+cor(x1, x2)
+plot(x1, x2)
+```
+
+Fit the multiple linear regression model.
+
+```{r}
+fit = lm(y ~ x1 + x2)
+summary(fit)
+par(mfrow = c(2, 2))
+plot(fit)
+```
+
+The new point seems to be a high-leverage point.
+
+Fit the simple models.
+
+```{r}
+f1 = lm(y ~ x1)
+summary(f1)
+par(mfrow = c(2, 2))
+plot(f1)
+f2 = lm(y ~ x2)
+summary(f2)
+par(mfrow = c(2, 2))
+plot(f2)
+```
+
+The new point seems to be an outlier and high-leverage point for the second model only. This becomes more clear with the below plots.
+
+```{r}
+par(mfrow = c(1, 1))
+plot(x1,y)
+plot(x2,y)
+```
+
+## Question 15 ##
+
+`Boston` dataset is in `MASS` library.
+
+```{r}
+library(MASS)
+head(Boston)
+```
+
+Predict using `zn`.
+
+```{r}
+fit = lm(crim~zn, data = Boston)
+simple_coefs = coef(fit)[2]  
+summary(fit)
+plot(Boston$zn, Boston$crim)
+```
+
+Predict using `indus`.
+
+```{r}
+fit = lm(crim~indus, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$indus, Boston$crim)
+```
+
+Predict using `chas`.
+
+```{r}
+fit = lm(crim~chas, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$chas, Boston$crim)
+```
+
+Predict using `nox`.
+
+```{r}
+fit = lm(crim~nox, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$nox, Boston$crim)
+```
+
+Predict using `rm`.
+
+```{r}
+fit = lm(crim~rm, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$rm, Boston$crim)
+```
+
+Predict using `age`.
+
+```{r}
+fit = lm(crim~age, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$age, Boston$crim)
+```
+
+Predict using `dis`.
+
+```{r}
+fit = lm(crim~dis, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$dis, Boston$crim)
+```
+
+Predict using `rad`.
+
+```{r}
+fit = lm(crim~rad, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$rad, Boston$crim)
+```
+
+Predict using `tax`.
+
+```{r}
+fit = lm(crim~tax, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$tax, Boston$crim)
+```
+
+Predict using `ptratio`.
+
+```{r}
+fit = lm(crim~ptratio, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$ptratio, Boston$crim)
+```
+
+Predict using `black`.
+
+```{r}
+fit = lm(crim~black, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$black, Boston$crim)
+```
+
+Predict using `lstat`.
+
+```{r}
+fit = lm(crim~lstat, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$lstat, Boston$crim)
+```
+
+Predict using `medv`.
+
+```{r}
+fit = lm(crim~medv, data = Boston)
+simple_coefs = c(simple_coefs, coef(fit)[2])
+summary(fit)
+plot(Boston$medv, Boston$crim)
+```
+
+Looked at individually, all of the predictors seem to be related to output except `chas`.
+
+Fit a multiple linear regression model with all the predictors. 
+
+```{r}
+fit = lm(crim~., data = Boston)
+multi_coefs = coef(fit)[-1]
+summary(fit)
+```
+
+Now, for many of the predictors the relations are not significant anymore.  
+
+Plot coefficients from simple models versus the coefficients from multiple linear regression.
+
+```{r}
+plot(simple_coefs, multi_coefs)
+```
+

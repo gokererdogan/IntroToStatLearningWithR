@@ -1,0 +1,137 @@
+# Introduction to Statistical Learning - Chapter 2 #
+
+## Question 8 ##
+Read data from `College.csv`
+
+```{r}
+setwd("~/Dropbox/Code/R/IntroductionToStatisticalLearning")
+df = read.csv(file = 'College.csv')
+head(df)
+```
+
+Use column `X` as row names and remove it.
+
+```{r}
+rownames(df) = df[,1]
+df$X = NULL
+head(df)
+```
+
+Look at summary.
+
+```{r}
+summary(df)
+```
+
+Plot `Outstate` versus `Private`.
+
+```{r}
+library(ggplot2)
+ggplot(data = df, mapping = aes(x=Outstate, y=Private)) + geom_point()
+```
+
+Create `Elite` variable.
+
+```{r}
+df$Elite = df$Top10perc>50
+ggplot(data = df, mapping = aes(x=Outstate, y=Elite)) + geom_point()
+```
+
+## Question 9 ##
+
+Read `Auto` data and remove rows with missing values.
+
+```{r}
+auto = read.csv(file = 'Auto.csv', header = T, na.strings = '?')
+# look at rows containing NA
+auto[apply(is.na(auto), MARGIN = 1, FUN = any),]
+# remove rows containing NA
+auto = na.omit(auto)
+```
+
+`mpg, displacement, horsepower, weight` and `acceleration` are quantitative variables. Rest are qualitative. Convert qualitative variables to factors.
+
+```{r}
+auto$cylinders = as.factor(auto$cylinders)
+auto$year = as.factor(auto$year)
+auto$origin = as.factor(auto$origin)
+# name is already a factor
+# look at ranges of quantitative variables
+range(auto$mpg)
+range(auto$displacement)
+range(auto$horsepower)
+range(auto$weight)
+range(auto$acceleration)
+```
+
+Look at summary. 
+
+```{r}
+summary(auto)
+```
+
+Remove observations 10 to 85, and look at the summary.
+
+```{r}
+summary(auto[-c(10:85),])
+```
+
+Look at pairwise scatterplots.
+
+```{r}
+pairs(auto)
+```
+
+## Question 10 ##
+
+Load `Boston` dataset from `MASS` package.
+
+```{r}
+library(MASS)
+head(Boston)
+```
+
+How many rows and columns?
+
+```{r}
+dim(Boston)
+```
+
+Look at some pairwise scatterplots of crime rate.
+
+```{r}
+par(mfrow = c(2,2))
+plot(Boston$medv, Boston$crim)
+plot(Boston$rm, Boston$crim)
+plot(Boston$ptratio, Boston$crim)
+plot(Boston$age, Boston$crim)
+```
+
+Some suburbs have unusually high crime rates.
+
+```{r}
+summary(Boston$crim)
+hist(Boston$crim, breaks = 50)
+```
+
+Look at suburbs with low median value of homes.
+
+```{r}
+head(Boston[order(Boston$medv),], 20)
+```
+
+Look at suburbs with high average number of rooms per dwelling.
+
+```{r}
+head(Boston[order(Boston$rm, decreasing = T),], 20)
+```
+
+
+
+
+
+
+
+
+
+

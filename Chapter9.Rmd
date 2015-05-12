@@ -1,0 +1,187 @@
+---
+output: html_document
+---
+# Introduction to Statistical Learning - Chapter 9
+## Question 4
+Let us generate data, and plot it.
+```{r}
+set.seed(2)
+x = matrix(rnorm(200*2), ncol=2)
+y = rep(1, 200)
+y[x[,1]<x[,2]^2-1] = -1
+plot(x[,2], x[,1], col=y+2)
+data = data.frame(x=x, y=as.factor(y))
+
+train = sample(200, 150)
+data.train = data[train,]
+data.test = data[-train,]
+```
+
+Fit SVM with polynomial kernel.
+
+```{r}
+library(e1071)
+tune.poly = tune(svm, y~., data=data.train, kernel='polynomial', 
+                 ranges=list(cost=c(0.0001, 0.001, 0.01, 0.1, 1, 10, 100),
+                             degree=c(2,3,4)))
+summary(tune.poly)
+svm.poly = tune.poly$best.model
+plot(svm.poly, data.train)
+summary(svm.poly)
+
+pred.poly = predict(svm.poly, data.test)
+mean(pred.poly!=data.test[,'y'])
+table(pred.poly, data.test[,'y'])
+```
+
+Fit SVM with radial kernel.
+
+```{r}
+tune.rad = tune(svm, y~., data=data.train, kernel='radial', 
+                 ranges=list(cost=c(0.0001, 0.001, 0.01, 0.1, 1, 10),
+                             gamma=c(0.01, 0.1, 1, 10, 100)))
+summary(tune.rad)
+svm.rad = tune.rad$best.model
+plot(svm.rad, data.train)
+summary(svm.rad)
+
+pred.rad = predict(svm.rad, data.test)
+mean(pred.rad!=data.test[,'y'])
+table(pred.rad, data.test[,'y'])
+```
+
+Fit SVM with linear kernel.
+
+```{r}
+tune.lin = tune(svm, y~., data=data.train, kernel='linear', 
+                 ranges=list(cost=c(0.0001, 0.001, 0.01, 0.1, 1, 10)))
+summary(tune.lin)
+svm.lin = tune.lin$best.model
+plot(svm.lin, data.train)
+summary(svm.lin)
+
+pred.lin = predict(svm.lin, data.test)
+mean(pred.lin!=data.test[,'y'])
+table(pred.lin, data.test[,'y'])
+```
+
+## Question 6
+Let us generate data, and plot it.
+```{r}
+set.seed(1)
+x = matrix(rnorm(50*2), ncol=2)
+y = rep(1, 50)
+y[x[,1]<x[,2]] = -1
+#x[y==1, 1] = x[y==1, 1] + .05
+#x[y==1, 2] = x[y==1, 2] - .05
+plot(x[,2], x[,1], col=y+2)
+data = data.frame(x=x, y=as.factor(y))
+
+train = sample(50, 25)
+data.train = data[train,]
+data.test = data[-train,]
+#plot(data.train[,2], data.train[,1], col=y[train]+2)
+#plot(data.test[,2], data.test[,1], col=y[-train]+2)
+```
+
+Fit SVM with linear kernel for different cost values. Look at the training, CV, and test error.
+
+```{r}
+costs = c(0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000)
+tune.q6 = tune(svm, y~., data=data.train, kernel='linear', 
+               ranges=list(cost=costs))
+summary(tune.q6)
+err.cv = tune.q6$performances[,'error']
+
+svm.best = tune.q6$best.model
+plot(svm.best, data.train)
+
+get_testtrain_err = function(tr, ts, c){
+  fit = svm(y~., data=tr, kernel='linear', cost=c)
+  pred.tr = predict(fit, newdata=tr)
+  pred.ts = predict(fit, newdata=ts)
+  err.tr = 1 - mean(pred.tr==tr[,'y'])
+  err.ts = mean(pred.ts!=ts[,'y'])
+  c(err.tr, err.ts)
+}
+
+err.train = rep(0, length(costs))
+err.test = rep(0, length(costs))
+for(i in 1:length(costs)){
+  errs = get_testtrain_err(data.train, data.test, c=costs[i])
+  err.train[i] = errs[1]
+  err.test[i] = errs[2]
+}
+
+plot(costs, err.cv, log='x', col='red', type='l')
+lines(costs, err.train, col='blue')
+lines(costs, err.test, col='green')
+```
+
+## Question 8
+Split into training and test datasets.
+
+```{r}
+library(ISLR)
+set.seed(1)
+train = sample(nrow(OJ), 800)
+oj.train = OJ[train,]
+oj.test = OJ[-train,]
+```
+
+Fit SVM with linear kernel.
+
+```{r}
+svm.lin = svm(Purchase~., data=oj.train, kernel='linear', cost=0.01)
+summary(svm.lin)
+pred.tr.lin = predict(svm.lin, oj.train)
+mean(pred.tr.lin!=oj.train[,'Purchase'])
+pred.ts.lin = predict(svm.lin, oj.test)
+mean(pred.ts.lin!=oj.test[,'Purchase'])
+```
+
+Tune it!
+
+```{r}
+tune.lin = tune(svm, Purchase~., data=oj.train, kernel='linear', 
+                 ranges=list(cost=c(0.001, 0.01, 0.1, 1, 10, 100)))
+summary(tune.lin)
+svm.lin.best = tune.lin$best.model
+summary(svm.lin.best)
+
+pred.tr.lin = predict(svm.lin.best, oj.train)
+mean(pred.tr.lin!=oj.train[,'Purchase'])
+pred.ts.lin = predict(svm.lin.best, oj.test)
+mean(pred.ts.lin!=oj.test[,'Purchase'])
+```
+
+Fit SVM with radial kernel.
+
+```{r}
+tune.rad = tune(svm, Purchase~., data=oj.train, kernel='radial', 
+                 ranges=list(cost=c(0.001, 0.01, 0.1, 1, 10, 100)))
+summary(tune.rad)
+svm.rad.best = tune.rad$best.model
+summary(svm.rad.best)
+
+pred.tr.rad = predict(svm.rad.best, oj.train)
+mean(pred.tr.rad!=oj.train[,'Purchase'])
+pred.ts.rad = predict(svm.rad.best, oj.test)
+mean(pred.ts.rad!=oj.test[,'Purchase'])
+```
+
+Fit SVM with polynomial kernel.
+
+```{r}
+tune.poly = tune(svm, Purchase~., data=oj.train, kernel='polynomial', degree=2, 
+                 ranges=list(cost=c(0.001, 0.01, 0.1, 1, 10, 100)))
+summary(tune.poly)
+svm.poly.best = tune.poly$best.model
+summary(svm.poly.best)
+
+pred.tr.poly = predict(svm.poly.best, oj.train)
+mean(pred.tr.poly!=oj.train[,'Purchase'])
+pred.ts.poly = predict(svm.poly.best, oj.test)
+mean(pred.ts.poly!=oj.test[,'Purchase'])
+```
+

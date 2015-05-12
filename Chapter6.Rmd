@@ -1,0 +1,554 @@
+---
+output: html_document
+---
+# Introduction to Statistical Learning - Chapter 6
+
+## Question 1
+a. We expect the model found by best subset method to have the smallest training RSS, because best subset method looks at all the models with $k$ predictors and chooses the one with the smallest error.  
+b. We don't know; we probably expect the model from best subset to have the smallest test RSS, but it is not guaranteed.  
+c. i, ii are true; rest are false.  
+
+## Question 2
+a. iii is true.  
+b. Again iii is true.  
+c. ii is true.  
+
+## Question 3
+a. When s=0, all coefficients will be 0 except the intercept. As s gets larger, the coefficients become less constrained; hence the problem becomes more least-squares like. So, training RSS will steadily decrease.  
+b.Test RSS will decrease first, but it will eventually start increasing (I think this also depends on the problem; for some problems the least-squares solution might be the best.).  
+c. Variance will increase (model becomes more flexible.).  
+d. Bias will decrease.  
+e. Irreducible error does not change.  
+
+## Question 4
+This question is same with the previous one, only the question is phrased in terms of $\lambda$ rather than s. So the answers are just the opposites of what we said for Question 3.  
+
+## Question 5
+Let us assume that $x_{11} = x_{12} = a$, $x_{21} = x_{22} = -a$, and $y1 = y$, $y2 = -y$. Then the optimization problem solved by ridge regression is
+\[
+\text{E}_R = (y - (\beta_1 a + \beta_2 a))^2 + (-y - (-\beta_1 a - \beta_2 a))^2 + \lambda (\beta_1^2 + \beta_2^2) \\
+= 2(y - (\beta_1 a + \beta_2 a))^2 + \lambda (\beta_1^2 + \beta_2^2)
+\]  
+Set the derivatives with respect to coefficients to zero to find the optimum values.  
+\[
+\frac{\partial}{\partial \beta_1} = -4(y - \beta_1 a - \beta_2 a)a + 2 \lambda \beta_1 \\
+-4ay + 4a^2 \beta_1 + 4a^2 \beta_2 + 2 \lambda \beta_1 = 0 \\
+(4a^2 + 2 \lambda) \beta_1 + (4a^2) \beta_2 = 4ay
+\]
+The derivation for $\beta_2$ is exactly symmetric, so
+\[
+(4a^2) \beta_1 + (4a^2 + 2 \lambda) \beta_2 = 4ay
+\]
+Note that as long as $\lambda$ is not zero, these two equations are independent (different), meaning that we get unique solutions. These solutions are
+\[
+\beta_1 = \beta_2 = \frac{2ay}{4a^2 + \lambda}
+\]
+
+Now let us look at lasso. We write down the optimization problem.
+\[
+E_L = (y - (\beta_1 a + \beta_2 a))^2 + (-y - (-\beta_1 a - \beta_2 a))^2 + \lambda (|\beta_1| + |\beta_2|) \\
+= 2(y - (\beta_1 a + \beta_2 a))^2 + \lambda (|\beta_1| + |\beta_2|)
+\]
+Let us assume that $\beta_1>0$ and $\beta_2>0$. Set the derivative with respect to $\beta_1$ to zero.
+\[
+\frac{\partial}{\partial \beta_1} = -4(y - \beta_1 a - \beta_2 a)a + \lambda \\
+-4ay + 4a^2 \beta_1 + 4a^2 \beta_2 + \lambda = 0 \\
+(4a^2) \beta_1 + (4a^2) \beta_2 = 4ay - \lambda
+\]
+The derivative with respect to $\beta_2$ is exactly the same with the derivative with respect to $\beta_1$, so we get the same equation.
+\[
+(4a^2) \beta_1 + (4a^2) \beta_2 = 4ay - \lambda
+\]
+Now we do not have two independent equations, but a single one. So only thing we can say about the coefficients is that their sum is given as follows.
+\[
+\beta_1 + \beta_2 = \frac{4ay - \lambda}{4a^2}
+\]
+So any pair of values giving the above sum will be an optimum value, in other words, optimum value is not a single point, but a line.
+
+Another way to think about this is as follows. Let us look at the optimization problems for both of the problems. Assume that for the optimum solution the first term in the following problems vanish, only the second term matters. If first terms vanish, $\beta_1 + \beta_2 = \frac{y}{a}$, meaning that the sum of the coefficients is fixed. Now the difference between ridge and lasso comes down to this: for a pair of numbers with a known sum, what is the minimum value of the second term. For ridge, the minimum of $\lambda (\beta_1^2 + \beta_2^2)$ is achieved when $\beta_1=\beta_2$. For lasso, the minimum of $\lambda (|\beta_1| + |\beta_2|)$ can be achieved with any pair of numbers that sum to the given number.
+\[
+E_R = 2(y - (\beta_1 a + \beta_2 a))^2 + \lambda (\beta_1^2 + \beta_2^2) \\
+E_L = 2(y - (\beta_1 a + \beta_2 a))^2 + \lambda (|\beta_1| + |\beta_2|) \\
+\]
+
+## Question 8
+
+Generate data
+```{r}
+set.seed(1)
+x = rnorm(100)
+err = rnorm(100)
+y = 0.2 + 0.3*x + 0.4*x^2 + 0.5*x^3 + err
+df =cbind(as.data.frame(poly(x, degree = 10, raw=T)), y)
+head(df)
+```
+
+Run best subset selection.
+```{r}
+library(leaps)
+reg.full = regsubsets(y~., df, nvmax=10)
+reg.summary = summary(reg.full)
+reg.summary
+```
+
+Note that these results do not look good at all. The best 3 variable model contains $X^4$ and $X^5$!
+
+Plot $C_p$, BIC, and adjusted $R^2$.
+```{r}
+plot(reg.summary$cp, type='l')
+which.min(reg.summary$cp)
+
+plot(reg.summary$bic, type='l')
+which.min(reg.summary$bic)
+
+plot(reg.summary$adjr2, type='l')
+which.max(reg.summary$adjr2)
+```
+
+All of the measures tell us that the model with 3 predictors is the best. Let us look at the coefficients for that model.
+```{r}
+coef(reg.full, id=3)
+```
+
+Let us do the same thing using forward selection.
+```{r}
+reg.fwd = regsubsets(y~., df, nvmax=10, method = 'forward')
+reg.fwd_summary = summary(reg.fwd)
+reg.fwd_summary
+```
+
+Plot $C_p$, BIC, and adjusted $R^2$.
+```{r}
+plot(reg.fwd_summary$cp, type='l')
+which.min(reg.fwd_summary$cp)
+
+plot(reg.fwd_summary$bic, type='l')
+which.min(reg.fwd_summary$bic)
+
+plot(reg.fwd_summary$adjr2, type='l')
+which.max(reg.fwd_summary$adjr2)
+```
+
+Now these measures tell us different things!
+
+Let us do the backward selection.
+```{r}
+reg.bwd = regsubsets(y~., df, nvmax=10, method = 'backward')
+reg.bwd_summary = summary(reg.bwd)
+reg.bwd_summary
+```
+
+Plot $C_p$, BIC, and adjusted $R^2$.
+```{r}
+plot(reg.bwd_summary$cp, type='l')
+which.min(reg.bwd_summary$cp)
+
+plot(reg.bwd_summary$bic, type='l')
+which.min(reg.bwd_summary$bic)
+
+plot(reg.bwd_summary$adjr2, type='l')
+which.max(reg.bwd_summary$adjr2)
+```
+
+At least now all the measures agree!
+
+Let us fit lasso and look at the crossvalidation error.
+
+```{r}
+library(glmnet)
+mx = model.matrix(y~., df)[,-1]
+fit.lasso = cv.glmnet(x = mx, y = y, alpha=1)
+plot(fit.lasso)
+```
+
+The best cv error is reached at lambda
+```{r}
+fit.lasso$lambda.min
+```
+
+The coefficients are
+```{r}
+coef(fit.lasso, s='lambda.min')
+```
+
+Now generate data according to the second model.
+```{r}
+y = 0.2 + 0.3*x^7 + err
+df$y = y
+```
+
+Run best subset selection.
+```{r}
+reg.full = regsubsets(y~., df, nvmax=10)
+reg.summary = summary(reg.full)
+reg.summary
+```
+It seems to have worked better; one variable model contains $X_7$.
+
+Plot $C_p$, BIC, and adjusted $R^2$.
+```{r}
+plot(reg.summary$cp, type='l')
+which.min(reg.summary$cp)
+
+plot(reg.summary$bic, type='l')
+which.min(reg.summary$bic)
+
+plot(reg.summary$adjr2, type='l')
+which.max(reg.summary$adjr2)
+```
+
+However the measures are severely underestimating the number of predictors. (I guess all these measures are harshly punishing large number of predictors.)
+
+Let us see what lasso does.
+```{r}
+mx = model.matrix(y~., df)[,-1]
+fit.lasso = cv.glmnet(x = mx, y = y, alpha=1)
+plot(fit.lasso)
+```
+
+The best cv error is reached at lambda
+```{r}
+fit.lasso$lambda.min
+```
+
+The coefficients are
+```{r}
+coef(fit.lasso, s='lambda.min')
+```
+
+Not bad. The coefficient for $X^7$ is pretty close to its actual value. I guess the take home message 1 is do not use BIC etc., just do cross-validation!
+
+## Question 9
+```{r}
+library(ISLR)
+set.seed(1)
+train = sample(c(T,F), size = nrow(College), replace = T)
+test = !train
+```
+
+Fit a linear model.
+```{r}
+lm.fit = lm(Apps~., data = College, subset = train)
+summary(lm.fit)
+```
+
+As the number of applications accepted increases, the number of applications received increases. This is probably a collinearity effect due to `Accept` being correlated with `Enroll`.
+```{r}
+cor(College$Accept, College$Enroll)
+```
+
+Calculate MSE.
+```{r}
+lm.pred = predict(object = lm.fit, newdata = College[test,])
+lm.err = mean((lm.pred - College[test, 'Apps'])^2) 
+lm.err
+```
+
+Fit a ridge regression model.
+```{r}
+library(glmnet)
+set.seed(1)
+mx = model.matrix(Apps~., College)[,-1]
+trainy = College[train, 'Apps']
+trainx = mx[train,]
+testx = mx[test,]
+ridge.fit = cv.glmnet(x = trainx, y = trainy, alpha = 0, lambda=exp(seq(from = 1, to = 15, length.out = 100)))
+ridge.fit$lambda.min
+plot(ridge.fit)
+ridge.pred = predict(object = ridge.fit, newx = testx, s = 'lambda.min')
+ridge.err = mean((ridge.pred - College[test, 'Apps'])^2)
+ridge.err
+```
+
+Fit a lasso regression model.
+```{r}
+set.seed(1)
+lasso.fit = cv.glmnet(x = trainx, y = trainy, alpha = 1, lambda = exp(seq(from = 1, to = 15, length.out = 100)))
+lasso.fit$lambda.min
+plot(lasso.fit)
+lasso.pred = predict(object = lasso.fit, newx = testx, s = 'lambda.min')
+lasso.err = mean((lasso.pred - College[test, 'Apps'])^2)
+lasso.err
+coef(lasso.fit, s = 'lambda.min')
+```
+
+Fit PCR.
+```{r}
+set.seed(1)
+library(pls)
+pcr.fit = pcr(Apps~., data = College, subset=train, scale=T, validation='CV')
+validationplot(pcr.fit)
+summary(pcr.fit)
+```
+
+It seems like the lowest MSE is reached when all predictors are included in the model, but that would just amount to the least-squares regression. 9 components seem like a good compromise.
+```{r}
+pcr.pred = predict(pcr.fit, testx, ncomp=9)
+pcr.err = mean((pcr.pred - College[test, 'Apps'])^2)
+pcr.err
+```
+
+Fit PLS.
+```{r}
+set.seed(1)
+pls.fit = plsr(Apps~., data = College, subset=train, scale=T, validation='CV')
+validationplot(pls.fit)
+summary(pls.fit)
+```
+
+MSE does not seem to change much after 8 components.
+```{r}
+pls.pred = predict(pls.fit, testx, ncomp=8)
+pls.err = mean((pls.pred - College[test, 'Apps'])^2)
+pls.err
+```
+
+## Question 10
+
+Generate data and split into train/test.
+```{r}
+set.seed(1)
+x = matrix(rnorm(1000*20), nrow=1000)
+err = rnorm(1000)
+coefs = rep(0, 20)
+coefs[1] = 0.3
+coefs[5] = 0.4
+coefs[9] = 0.5
+coefs[13] = 0.6
+coefs[18] = 0.7
+y = x%*%coefs + err
+df = data.frame(x, y)
+head(df)
+train = sample(1:1000, size = 100, replace = F)
+test = -train
+```
+
+Run best subset selection.
+```{r}
+library(leaps)
+reg.full = regsubsets(y~., df[train,], nvmax=20)
+reg.summary = summary(reg.full)
+reg.summary
+```
+
+Seems to have worked pretty well. Let us look at the training error.
+
+```{r}
+plot(reg.summary$rss, xlab='No of vars', ylab='RSS', type='l')
+which.min(reg.summary$rss)
+
+plot(reg.summary$bic, xlab='No of vars', ylab='BIC', type='l')
+which.min(reg.summary$bic)
+
+plot(reg.summary$adjr2, xlab='No of vars', ylab='Adj R2', type='l')
+which.max(reg.summary$adjr2)
+
+plot(reg.summary$cp, xlab='No of vars', ylab='Cp', type='l')
+which.min(reg.summary$cp)
+
+coef(reg.full, id=5)
+```
+
+Let us calculate the test errors.
+```{r}
+predict.regsubsets = function(object, newdata, id){
+  form = as.formula(object$call[[2]])
+  mat = model.matrix(form, newdata)
+  coefi = coef(object, id=id)
+  xvars = names(coefi)
+  mat[,xvars]%*%coefi
+}
+err.test = rep(NA, 20)
+for( i in 1:20 )
+{
+  pred = predict.regsubsets(reg.full, newdata = df[test,], id = i)
+  err.test[i] = mean((pred - df$y[test])^2)
+}
+
+plot(err.test, xlab='No of vars', ylab='Test error', type='l')
+which.min(err.test)
+coef(reg.full, id=which.min(err.test))
+```
+
+Test error reaches its minimum at the model with 5 predictors! Note that the coefficients are a bit larger than their actual values.
+
+Let's look at how the difference between the actual coefficients and their estimates change as the number of predictors change.
+```{r}
+colnames = c('(Intercept)', names(df)[1:20])
+coef.actual = rep(0, 21)
+names(coef.actual) = colnames
+coef.actual['X1'] = 0.3
+coef.actual['X5'] = 0.4
+coef.actual['X9'] = 0.5
+coef.actual['X13'] = 0.6
+coef.actual['X18'] = 0.7
+
+coef.est = rep(0, 21)
+names(coef.est) = colnames
+coef.diff = rep(NA, 20)
+for(i in 1:20){
+  mc = coef(reg.full, id=i)
+  coef.est[names(mc)] = mc
+  coef.diff[i] = sqrt(sum((coef.actual - coef.est)^2))
+  coef.est[] = 0
+}
+
+plot(coef.diff, xlab='No of vars', ylab='Coef. diff.', type='l')
+```
+
+Looks good, the minimum is reached at 5 variables!
+
+## Question 11
+
+Load the `Boston` dataset and split it into training and test sets.
+```{r}
+library(MASS)
+set.seed(1)
+train = sample(1:nrow(Boston), nrow(Boston)/2)
+test = -train
+
+train = sample(c(T,F), size = nrow(Boston), replace = T)
+test = !train
+```
+
+Fit a linear model.
+```{r}
+lm.fit = lm(crim~., data = Boston, subset = train)
+summary(lm.fit)
+```
+
+Calculate MSE.
+```{r}
+lm.pred = predict(object = lm.fit, newdata = Boston[test,])
+lm.err = mean((lm.pred - Boston[test, 'crim'])^2)
+lm.err
+```
+
+Fit a ridge regression model.
+```{r}
+library(glmnet)
+set.seed(1)
+mx = model.matrix(crim~., Boston)[,-1]
+trainy = Boston[train, 'crim']
+trainx = mx[train,]
+testx = mx[test,]
+ridge.fit = cv.glmnet(x = trainx, y = trainy, alpha = 0)
+plot(ridge.fit)
+ridge.pred = predict(object = ridge.fit, newx = testx, s = 'lambda.min')
+ridge.fit$lambda.min
+ridge.err = mean((ridge.pred - Boston[test, 'crim'])^2)
+ridge.err
+coef(ridge.fit)
+```
+
+Fit a lasso regression model.
+```{r}
+set.seed(1)
+lasso.fit = cv.glmnet(x = trainx, y = trainy, alpha = 1)
+plot(lasso.fit)
+lasso.fit$lambda.min
+lasso.pred = predict(object = lasso.fit, newx = testx, s = 'lambda.min')
+lasso.err = mean((lasso.pred - Boston[test, 'crim'])^2)
+lasso.err
+coef(lasso.fit, s = 'lambda.min')
+```
+
+`rm` seems like an important predictor. Let us see what is going on in fact. Correlations between predictors should be informative.
+```{r}
+cor(Boston)
+```
+
+As you see `rm` is highly correlated with both `lstat` and `medv`.
+
+Fit PCR.
+```{r}
+set.seed(1)
+library(pls)
+pcr.fit = pcr(crim~., data = Boston, subset=train, scale=T, validation='CV')
+validationplot(pcr.fit)
+summary(pcr.fit)
+```
+
+8 components seem like a good choice.
+```{r}
+pcr.pred = predict(pcr.fit, testx, ncomp=8)
+pcr.err = mean((pcr.pred - Boston[test, 'crim'])^2)
+pcr.err
+```
+
+PCR achieves a good MSE, but the problem is it is hard to interpret. Or is it? It doesn't do feature selection, but it still tells you which predictors seem to be more important.
+```{r}
+coef(pcr.fit, ncomp=8)
+```
+
+Fit PLS.
+```{r}
+set.seed(1)
+pls.fit = plsr(crim~., data = Boston, subset=train, scale=T, validation='CV')
+validationplot(pls.fit)
+summary(pls.fit)
+```
+
+MSE does not seem to change much after 4 components.
+```{r}
+pls.pred = predict(pls.fit, testx, ncomp=4)
+pls.err = mean((pls.pred - Boston[test, 'crim'])^2)
+pls.err
+coef(pcr.fit, ncomp=4)
+```
+
+Run best subset selection.
+```{r}
+library(leaps)
+reg.full = regsubsets(crim~., Boston[train,], nvmax=13)
+reg.summary = summary(reg.full)
+reg.summary
+```
+
+Seems to have worked pretty well. Let us look at the training error.
+
+```{r}
+plot(reg.summary$rss, xlab='No of vars', ylab='RSS', type='l')
+which.min(reg.summary$rss)
+
+plot(reg.summary$bic, xlab='No of vars', ylab='BIC', type='l')
+which.min(reg.summary$bic)
+
+plot(reg.summary$adjr2, xlab='No of vars', ylab='Adj R2', type='l')
+which.max(reg.summary$adjr2)
+
+plot(reg.summary$cp, xlab='No of vars', ylab='Cp', type='l')
+which.min(reg.summary$cp)
+
+coef(reg.full, id=8)
+```
+
+Let us calculate the test errors.
+```{r}
+predict.regsubsets = function(object, newdata, id){
+  form = as.formula(object$call[[2]])
+  mat = model.matrix(form, newdata)
+  coefi = coef(object, id=id)
+  xvars = names(coefi)
+  mat[,xvars]%*%coefi
+}
+err.test = rep(NA, 13)
+for( i in 1:13 )
+{
+  pred = predict.regsubsets(reg.full, newdata = Boston[test,], id = i)
+  err.test[i] = mean((pred - Boston$crim[test])^2)
+}
+
+plot(err.test, xlab='No of vars', ylab='Test error', type='l')
+subset.err = min(err.test)
+subset.err
+which.min(err.test)
+coef(reg.full, id=which.min(err.test))
+```
+
+Let us get everything together.
+```{r}
+data.frame(Method=c('lm', 'ridge', 'lasso', 'pcr', 'pls', 'subsets'), MSE=c(lm.err, ridge.err, lasso.err, pcr.err, pls.err, subset.err))
+```
+
+
